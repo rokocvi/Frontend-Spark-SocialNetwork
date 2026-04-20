@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import useAuthStore from '../store/authStore'
+import * as signalR from '@microsoft/signalr'
 
 function Home() {
   const navigate = useNavigate()
-  const { user, logout } = useAuthStore()
+  const { user, logout, token } = useAuthStore()
   const [spark, setSpark] = useState(null)
   const [content, setContent] = useState('')
   const [tags, setTags] = useState('')
@@ -15,12 +16,24 @@ function Home() {
   const [profileImage, setProfileImage] = useState(null)
   const [history, setHistory] = useState([])
   const [showHistory, setShowHistory] = useState(false)
+  const [newMatchNotification, setNewMatchNotification] = useState(false)
+  const connectionRef = useRef(null)
+  const isConnectingRef = useRef(false)
+
 
   useEffect(() => {
     fetchTodaySpark()
     fetchUnreadCount()
     fetchProfileImage()
     fetchSparkHistory()
+    setupNotifications()
+
+    return () => {
+      if (connectionRef.current) {
+        connectionRef.current.stop()
+        connectionRef.current = null
+      }
+    }
   }, [])
 
   const fetchTodaySpark = async () => {
@@ -101,6 +114,32 @@ function Home() {
       fetchUnreadCount()
     } catch (err) {
       setError(err.response?.data?.message || 'Greška pri pokretanju matchinga')
+    }
+  }
+
+   const setupNotifications = async () => {
+    if (isConnectingRef.current || connectionRef.current) return
+
+    isConnectingRef.current = true
+
+    const connection = new signalR.HubConnectionBuilder()
+      .withUrl('https://localhost:7195/hubs/chat', {
+        accessTokenFactory: () => token
+      })
+      .withAutomaticReconnect()
+      .build()
+
+    connection.on('NewMatch', () => {
+      setNewMatchNotification(true)
+      fetchUnreadCount()
+    })
+
+    try {
+      await connection.start()
+      await connection.invoke('JoinUserGroup')
+      connectionRef.current = connection
+    } catch (err) {
+      console.error('SignalR greška:', err)
     }
   }
 
@@ -257,6 +296,16 @@ function Home() {
 
       {/* Main */}
       <div className="max-w-xl mx-auto px-4 py-10">
+
+        {newMatchNotification && (
+          <div
+            onClick={() => { setNewMatchNotification(false); navigate('/match') }}
+            className="mb-4 px-4 py-3 rounded-xl bg-orange-50 border border-orange-200 text-orange-700 text-sm font-medium cursor-pointer hover:bg-orange-100 transition-colors flex items-center justify-between"
+          >
+            <span>⚡ Imaš novi match! Provjeri matcheve.</span>
+            <span className="text-orange-400 text-xs">Klikni →</span>
+          </div>
+        )}
 
         {error && (
           <div className="mb-4 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm font-medium">
