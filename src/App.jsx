@@ -8,6 +8,7 @@ import Chat from './pages/Chat'
 import Messages from './pages/Messages'
 import Profile from './pages/Profile'
 import UserProfile from './pages/UserProfile'
+import Feed from './pages/Feed'
 
 function App() {
   return (
@@ -34,6 +35,10 @@ function App() {
         <Route path="/user/:username" element={
         <ProtectedRoute><UserProfile /></ProtectedRoute>
          } />
+
+         <Route path="/feed" element={
+          <ProtectedRoute><Feed /></ProtectedRoute>
+        } />
     </Routes>
     </BrowserRouter>
   )

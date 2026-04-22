@@ -114,7 +114,7 @@ function Match() {
                   </div>
                   {match.isPermanent ? (
                     <span className="px-2.5 py-1 rounded-full text-[10px] font-semibold bg-green-50 text-green-600 border border-green-200">
-                      Permanentno
+                      Sačuvano
                     </span>
                   ) : (
                     <span className="px-2.5 py-1 rounded-full text-[10px] font-semibold bg-orange-50 text-orange-500 border border-orange-200">

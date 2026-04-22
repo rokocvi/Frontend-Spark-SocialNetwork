@@ -146,68 +146,113 @@ function Home() {
   return (
     <div className="min-h-screen bg-stone-50 text-neutral-900">
 
+      
       {/* Navbar */}
-      <nav className="sticky top-0 z-10 bg-white border-b border-stone-200 px-6 flex items-center justify-between h-14">
-        <div className="flex items-center gap-2">
-          <span className="text-lg font-bold text-orange-500 tracking-tight">Spark</span>
-          <span className="text-[10px] font-semibold text-stone-400 uppercase tracking-widest">beta</span>
-        </div>
+<nav className="sticky top-0 z-10 bg-white border-b border-stone-200 px-6 flex items-center justify-between h-14">
+  
+  {/* Logo — lijevo */}
+  <div className="flex items-center gap-2">
+    <span className="text-lg font-bold text-orange-500 tracking-tight">Spark</span>
+    <span className="text-[10px] font-semibold text-stone-400 uppercase tracking-widest">beta</span>
+  </div>
 
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-stone-400 px-1 hidden sm:block">@{user?.username}</span>
+  {/* Navigacija — sredina */}
+  <div className="flex items-center gap-1">
 
-          <button
-            onClick={() => navigate('/profile')}
-            className="w-7 h-7 rounded-full bg-orange-50 border border-orange-200 flex items-center justify-center overflow-hidden hover:border-orange-400 transition-colors flex-shrink-0"
-            title="Profil"
-          >
-            {profileImage ? (
-              <img
-                src={`data:image/jpeg;base64,${profileImage}`}
-                alt="Profil"
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <span className="text-xs font-bold text-orange-500">
-                {(user?.username || '?')[0].toUpperCase()}
-              </span>
-            )}
-          </button>
+    {/* Home */}
+    <button
+      onClick={() => navigate('/home')}
+      className="relative w-12 h-10 flex items-center justify-center rounded-xl text-orange-500 hover:bg-orange-50 transition-colors"
+      title="Početna"
+    >
+      <svg width="22" height="22" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+      </svg>
+    </button>
 
-          <button
-            onClick={handleRunMatching}
-            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-orange-50 text-orange-600 border border-orange-200 hover:bg-orange-100 hover:border-orange-300 transition-colors"
-          >
-            ⚡ Pokreni matching
-          </button>
+    {/* Matchevi */}
+    <button
+      onClick={() => navigate('/match')}
+      className="relative w-12 h-10 flex items-center justify-center rounded-xl text-stone-400 hover:bg-stone-100 hover:text-orange-500 transition-colors"
+      title="Matchevi"
+    >
+      <svg width="22" height="22" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+      </svg>
+    </button>
 
-          <button
-            onClick={() => navigate('/match')}
-            className="px-3 py-1.5 rounded-lg text-xs font-semibold text-neutral-500 border border-stone-200 hover:bg-stone-100 hover:text-neutral-700 transition-colors"
-          >
-            Matchevi
-          </button>
+    {/* Feed */}
+    <button
+      onClick={() => navigate('/feed')}
+      className="relative w-12 h-10 flex items-center justify-center rounded-xl text-stone-400 hover:bg-stone-100 hover:text-orange-500 transition-colors"
+      title="Feed"
+    >
+      <svg width="22" height="22" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M3 3h8v8H3zm0 10h8v8H3zM13 3h8v8h-8zm0 10h8v8h-8z"/>
+      </svg>
+    </button>
 
-          <button
-            onClick={() => navigate('/messages')}
-            className="relative px-3 py-1.5 rounded-lg text-xs font-semibold text-neutral-500 border border-stone-200 hover:bg-stone-100 hover:text-neutral-700 transition-colors"
-          >
-            💬 Poruke
-            {unreadCount > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 bg-orange-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center border-2 border-stone-50">
-                {unreadCount > 9 ? '9+' : unreadCount}
-              </span>
-            )}
-          </button>
+    {/* Poruke */}
+    <button
+      onClick={() => navigate('/messages')}
+      className="relative w-12 h-10 flex items-center justify-center rounded-xl text-stone-400 hover:bg-stone-100 hover:text-orange-500 transition-colors"
+      title="Poruke"
+    >
+      <svg width="22" height="22" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
+      </svg>
+      {unreadCount > 0 && (
+        <span className="absolute top-1 right-1 bg-orange-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+          {unreadCount > 9 ? '9+' : unreadCount}
+        </span>
+      )}
+    </button>
 
-          <button
-            onClick={handleLogout}
-            className="px-3 py-1.5 rounded-lg text-xs font-semibold text-red-500 border border-red-100 hover:bg-red-50 transition-colors"
-          >
-            Odjava
-          </button>
-        </div>
-      </nav>
+    {/* Matching */}
+    <button
+      onClick={handleRunMatching}
+      className="relative w-12 h-10 flex items-center justify-center rounded-xl text-stone-400 hover:bg-orange-50 hover:text-orange-500 transition-colors"
+      title="Pokreni matching"
+    >
+      <svg width="22" height="22" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M7 2v11h3v9l7-12h-4l4-8z"/>
+      </svg>
+    </button>
+
+  </div>
+
+  {/* Profil + odjava — desno */}
+  <div className="flex items-center gap-2">
+    <button
+      onClick={() => navigate('/profile')}
+      className="w-9 h-9 rounded-full bg-orange-50 border-2 border-orange-200 flex items-center justify-center overflow-hidden hover:border-orange-400 transition-colors flex-shrink-0"
+      title={`@${user?.username}`}
+    >
+      {profileImage ? (
+        <img
+          src={`data:image/jpeg;base64,${profileImage}`}
+          alt="Profil"
+          className="w-full h-full object-cover"
+        />
+      ) : (
+        <span className="text-sm font-bold text-orange-500">
+          {(user?.username || '?')[0].toUpperCase()}
+        </span>
+      )}
+    </button>
+
+    <button
+      onClick={handleLogout}
+      className="w-9 h-9 rounded-full bg-stone-100 flex items-center justify-center hover:bg-red-50 hover:text-red-500 text-stone-400 transition-colors"
+      title="Odjava"
+    >
+      <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
+      </svg>
+    </button>
+  </div>
+
+</nav>
 
       {/* Hero illustration */}
       <div className="w-full overflow-hidden border-b border-orange-100" style={{ background: '#fff7ed', height: '160px' }}>
