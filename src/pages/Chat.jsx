@@ -153,7 +153,7 @@ function Chat() {
     }
   }
 
-  return (
+ return (
     <div className="min-h-screen bg-stone-50 text-neutral-900 flex flex-col">
 
       {/* Navbar */}
@@ -185,7 +185,10 @@ function Chat() {
             return (
               <div key={msg.id} className={`flex items-end gap-2 ${isMe ? 'justify-end' : 'justify-start'}`}>
                 {!isMe && (
-                  <div className="w-7 h-7 rounded-full bg-orange-50 border border-orange-200 flex items-center justify-center overflow-hidden flex-shrink-0 mb-1">
+                  <div
+                    onClick={() => navigate(`/user/${msg.senderUsername}`)}
+                    className="w-7 h-7 rounded-full bg-orange-50 border border-orange-200 flex items-center justify-center overflow-hidden flex-shrink-0 mb-1 cursor-pointer hover:border-orange-400 transition-colors"
+                  >
                     {msg.senderProfileImageBase64 ? (
                       <img
                         src={`data:image/jpeg;base64,${msg.senderProfileImageBase64}`}
@@ -205,7 +208,10 @@ function Chat() {
                     : 'bg-white text-neutral-800 border border-stone-200 rounded-bl-sm'
                 }`}>
                   {!isMe && (
-                    <p className="text-[10px] font-semibold text-stone-400 mb-1 uppercase tracking-wide">
+                    <p
+                      onClick={() => navigate(`/user/${msg.senderUsername}`)}
+                      className="text-[10px] font-semibold text-stone-400 mb-1 uppercase tracking-wide cursor-pointer hover:text-orange-500 transition-colors"
+                    >
                       @{msg.senderUsername}
                     </p>
                   )}
@@ -214,7 +220,6 @@ function Chat() {
                     <p className={`text-[10px] ${isMe ? 'text-orange-200' : 'text-stone-400'}`}>
                       {new Date(msg.sentAt).toLocaleTimeString('hr', { hour: '2-digit', minute: '2-digit' })}
                     </p>
-                    {/* Pročitano — samo za moje poruke */}
                     {isMe && (
                       <span className={`text-[10px] ${msg.isRead ? 'text-orange-200' : 'text-orange-300'}`}>
                         {msg.isRead ? '✓✓' : '✓'}

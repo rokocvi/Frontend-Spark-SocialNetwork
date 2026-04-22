@@ -7,6 +7,7 @@ import Match from './pages/Match'
 import Chat from './pages/Chat'
 import Messages from './pages/Messages'
 import Profile from './pages/Profile'
+import UserProfile from './pages/UserProfile'
 
 function App() {
   return (
@@ -30,7 +31,10 @@ function App() {
           <ProtectedRoute><Messages /></ProtectedRoute>
         } />
         <Route path="*" element={<Navigate to="/login" />} />
-      </Routes>
+        <Route path="/user/:username" element={
+        <ProtectedRoute><UserProfile /></ProtectedRoute>
+         } />
+    </Routes>
     </BrowserRouter>
   )
 }

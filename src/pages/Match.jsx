@@ -103,7 +103,10 @@ function Match() {
                       )}
                     </div>
                     <div>
-                      <h3 className="text-sm font-bold text-neutral-800">
+                      <h3
+                        onClick={() => navigate(`/user/${match.matchedUsername}`)}
+                        className="text-sm font-bold text-neutral-800 cursor-pointer hover:text-orange-500 transition-colors"
+                        >
                         {match.matchedDisplayName || match.matchedUsername}
                       </h3>
                       <p className="text-xs text-stone-400 mt-0.5">@{match.matchedUsername}</p>
@@ -195,10 +198,13 @@ function Match() {
                         )}
                       </div>
                       <div>
-                        <h3 className="text-sm font-bold text-neutral-800">
-                          {match.matchedDisplayName || match.matchedUsername}
-                        </h3>
-                        <p className="text-xs text-stone-400 mt-0.5">@{match.matchedUsername}</p>
+                       <h3
+                        onClick={() => navigate(`/user/${match.matchedUsername}`)}
+                        className="text-sm font-bold text-neutral-800 cursor-pointer hover:text-orange-500 transition-colors"
+                      >
+                        {match.matchedDisplayName || match.matchedUsername}
+                      </h3>
+                                              <p className="text-xs text-stone-400 mt-0.5">@{match.matchedUsername}</p>
                       </div>
                     </div>
                        <span className="px-2.5 py-1 rounded-full text-[10px] font-semibold bg-stone-100 text-stone-400 border border-stone-200">
