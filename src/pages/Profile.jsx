@@ -5,7 +5,7 @@ import useAuthStore from '../store/authStore'
 
 function Profile() {
   const navigate = useNavigate()
-  const { user, login, token } = useAuthStore()
+  const { user, login, token, logout } = useAuthStore()
 
   const [displayName, setDisplayName] = useState('')
   const [bio, setBio] = useState('')
@@ -16,6 +16,7 @@ function Profile() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [stats, setStats] = useState(null)
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   const fileInputRef = useRef(null)
 
@@ -169,7 +170,23 @@ function Profile() {
     )
   }
 
-  return (
+  const handleDeleteAccount = async () => {
+
+    setSaving(true)
+    setError('')
+    try{
+      await api.delete('/profile')
+      logout()
+      navigate('/login')
+    } catch(err){
+      setError(err.response?.data?.message || 'Greška pri brisanju računa.')
+      setSaving(false)
+      setConfirmDelete(false)
+    }
+    
+  }
+
+ return (
     <div className="min-h-screen bg-stone-50 text-neutral-900">
 
       {/* Navbar */}
@@ -258,8 +275,6 @@ function Profile() {
             <h2 className="text-sm font-semibold text-stone-400 uppercase tracking-widest mb-5">
               Statistike
             </h2>
-
-            {/* Brojevi */}
             <div className="grid grid-cols-3 gap-3 mb-5">
               <div className="bg-stone-50 rounded-xl border border-stone-100 p-3 text-center">
                 <p className="text-xl font-bold text-orange-500">{stats.totalSparks}</p>
@@ -274,8 +289,6 @@ function Profile() {
                 <p className="text-[10px] font-medium text-stone-400 mt-0.5">Sačuvanih</p>
               </div>
             </div>
-
-            {/* Streak */}
             <div className="bg-orange-50 border border-orange-100 rounded-xl px-4 py-3 flex items-center justify-between mb-5">
               <div>
                 <p className="text-xs font-semibold text-orange-600">Streak</p>
@@ -286,8 +299,6 @@ function Profile() {
                 <span className="text-xl font-bold text-orange-500">{stats.streak}</span>
               </div>
             </div>
-
-            {/* Top tagovi */}
             {stats.topTags.length > 0 && (
               <div>
                 <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-widest mb-2.5">
@@ -364,6 +375,48 @@ function Profile() {
               {saving ? 'Sprema...' : 'Spremi promjene'}
             </button>
           </form>
+        </div>
+
+        {/* Brisanje računa */}
+        <div className="bg-white rounded-2xl border border-red-100 p-6">
+          <h2 className="text-sm font-semibold text-red-400 uppercase tracking-widest mb-2">
+            Opasna zona
+          </h2>
+          <p className="text-xs text-stone-400 mb-4">
+            Brisanjem računa trajno se brišu svi tvoji podaci, Sparkovi i matchevi. Ova radnja je nepovratna.
+          </p>
+          {!confirmDelete ? (
+            <button
+              type="button"
+              onClick={() => setConfirmDelete(true)}
+              className="px-4 py-2 rounded-xl text-xs font-semibold text-red-500 border border-red-200 hover:bg-red-50 transition-colors"
+            >
+              Obriši račun
+            </button>
+          ) : (
+            <div className="flex flex-col gap-3">
+              <p className="text-xs font-semibold text-red-500">
+                Jesi li siguran? Ova radnja se ne može poništiti.
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleDeleteAccount}
+                  disabled={saving}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-red-500 hover:bg-red-600 text-white transition-colors disabled:opacity-50"
+                >
+                  {saving ? 'Brisanje...' : 'Da, obriši račun'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmDelete(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-neutral-500 border border-stone-200 hover:bg-stone-100 transition-colors"
+                >
+                  Odustani
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
       </div>
