@@ -1,22 +1,109 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import api from '../services/api'
+import useAuthStore from '../store/authStore'
 
 function SparkAssistant() {
   const navigate = useNavigate()
-  const [messages, setMessages] = useState([
-    {
-      role: 'assistant',
-      content: 'Bok! Ja sam Spark asistent. Možeš me pitati bilo što o aplikaciji — kako funkcionira matching, što su tagovi, kako pronaći match i slično. ⚡'
-    }
-  ])
+  const { user } = useAuthStore()
+  const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const [loadingProfile, setLoadingProfile] = useState(true)
+  const [userContext, setUserContext] = useState(null)
 
-  console.log(import.meta.env.VITE_OPENAI_API_KEY)
+  useEffect(() => {
+    fetchUserContext()
+  }, [])
 
-  const systemPrompt = `Ti si AI asistent Spark aplikacije. Govoriš hrvatski jezik.
-  
-Spark je socijalna mreža gdje korisnici svaki dan objavljuju kratki post koji se zove "Spark" s tagovima koji opisuju što ih zanima taj dan. 
+  const fetchUserContext = async () => {
+    try {
+      const [sparkRes, matchRes, matchHistoryRes, profileRes] = await Promise.all([
+        api.get('/spark/history'),
+        api.get('/match'),
+        api.get('/match/history'),
+        api.get('/profile')
+      ])
+
+      const sparkHistory = sparkRes.data
+      const activeMatches = matchRes.data
+      const matchHistory = matchHistoryRes.data
+      const profile = profileRes.data
+
+      // Izračunaj streak
+      let streak = 0
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      const sparkDates = sparkHistory
+        .map(s => {
+          const d = new Date(s.sparkDate)
+          d.setHours(0, 0, 0, 0)
+          return d.getTime()
+        })
+        .sort((a, b) => b - a)
+      for (let i = 0; i < 30; i++) {
+        const day = new Date(today)
+        day.setDate(today.getDate() - i)
+        if (sparkDates.includes(day.getTime())) streak++
+        else break
+      }
+
+      // Najčešći tagovi
+      const tagCount = {}
+      sparkHistory.forEach(s => {
+        s.tags.forEach(tag => {
+          tagCount[tag] = (tagCount[tag] || 0) + 1
+        })
+      })
+      const topTags = Object.entries(tagCount)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([tag]) => tag)
+
+      // Ukupno matcheva
+      const allMatchIds = new Set([
+        ...activeMatches.map(m => m.id),
+        ...matchHistory.map(m => m.id)
+      ])
+      const totalMatches = allMatchIds.size
+      const permanentMatches = [...activeMatches, ...matchHistory]
+        .filter(m => m.isPermanent).length
+
+      const context = {
+        username: user?.username,
+        displayName: profile.displayName,
+        bio: profile.bio,
+        totalSparks: sparkHistory.length,
+        topTags,
+        totalMatches,
+        permanentMatches,
+        streak,
+        activeMatches: activeMatches.length
+      }
+
+      setUserContext(context)
+
+      // Postavi početnu poruku s personaliziranim pozdravom
+      setMessages([{
+        role: 'assistant',
+        content: `Bok ${profile.displayName || user?.username}! Ja sam tvoj Spark asistent. Vidim da imaš ${sparkHistory.length} Sparkova i ${totalMatches} matcheva do sad${streak > 0 ? `, a streak ti je ${streak} dana 🔥` : ''}. Kako ti mogu pomoći? ⚡`
+      }])
+
+    } catch (err) {
+      console.error(err)
+      setMessages([{
+        role: 'assistant',
+        content: 'Bok! Ja sam Spark asistent. Možeš me pitati bilo što o aplikaciji. ⚡'
+      }])
+    } finally {
+      setLoadingProfile(false)
+    }
+  }
+
+  const buildSystemPrompt = () => {
+    const base = `Ti si personalizirani AI asistent Spark aplikacije. Govoriš hrvatski jezik. Obraćaš se korisniku po imenu i koristiš njegove osobne podatke za personalizirane savjete.
+
+Spark je socijalna mreža gdje korisnici svaki dan objavljuju kratki post koji se zove "Spark" s tagovima koji opisuju što ih zanima taj dan.
 
 Kako aplikacija funkcionira:
 - Korisnik svaki dan objavi jedan Spark (max 280 znakova) s tagovima
@@ -27,7 +114,7 @@ Kako aplikacija funkcionira:
 
 Stranice aplikacije:
 - Home — objava dnevnog Sparka
-- Matchevi — pregled aktivnih i prošlih matcheva
+- Matchevi — pregled aktivnih i prošlih matcheva  
 - Poruke — pregled svih chatova
 - Feed — anonimni pregled današnjih Sparkova svih korisnika
 - Profil — uređivanje profila, profilna slika, bio, statistike
@@ -38,6 +125,26 @@ Savjeti za dobre matcheve:
 - Što više tagova, veća šansa za match
 
 Odgovaraj kratko i prijateljski. Ako te pitaju nešto što nije vezano za Spark aplikaciju, ljubazno reci da možeš pomoći samo s pitanjima o Sparku.`
+
+    if (!userContext) return base
+
+    const personal = `
+
+PODACI O KORISNIKU S KOJIM RAZGOVARAŠ:
+- Username: @${userContext.username}
+- Prikazno ime: ${userContext.displayName || 'nije postavljeno'}
+- Bio: ${userContext.bio || 'nije postavljeno'}
+- Ukupno Sparkova: ${userContext.totalSparks}
+- Najčešći tagovi: ${userContext.topTags.length > 0 ? userContext.topTags.map(t => '#' + t).join(', ') : 'nema još'}
+- Ukupno matcheva: ${userContext.totalMatches}
+- Permanentnih matcheva: ${userContext.permanentMatches}
+- Trenutni streak: ${userContext.streak} dana
+- Aktivnih matcheva trenutno: ${userContext.activeMatches}
+
+Koristi ove podatke za personalizirane savjete. Na primjer, ako korisnik ima malo matcheva, predloži mu specifičnije tagove. Ako ima dobar streak, pohvali ga.`
+
+    return base + personal
+  }
 
   const handleSend = async (e) => {
     e.preventDefault()
@@ -60,7 +167,7 @@ Odgovaraj kratko i prijateljski. Ako te pitaju nešto što nije vezano za Spark 
           model: 'gpt-4o-mini',
           max_tokens: 500,
           messages: [
-            { role: 'system', content: systemPrompt },
+            { role: 'system', content: buildSystemPrompt() },
             ...updatedMessages.map(m => ({ role: m.role, content: m.content }))
           ]
         })
@@ -84,11 +191,19 @@ Odgovaraj kratko i prijateljski. Ako te pitaju nešto što nije vezano za Spark 
   }
 
   const suggestedQuestions = [
-    'Kako dobiti match?',
-    'Što su tagovi?',
-    'Kako funkcionira streak?',
-    'Što je permanentni match?'
+    'Kako poboljšati matcheve?',
+    'Što misliš o mom profilu?',
+    'Koji tagovi su dobri za mene?',
+    'Kako povećati streak?'
   ]
+
+  if (loadingProfile) {
+    return (
+      <div className="min-h-screen bg-stone-50 flex items-center justify-center">
+        <span className="text-stone-400 text-sm">Učitavam tvoj profil...</span>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-stone-50 text-neutral-900 flex flex-col">
@@ -115,7 +230,7 @@ Odgovaraj kratko i prijateljski. Ako te pitaju nešto što nije vezano za Spark 
           </div>
           <div>
             <p className="text-sm font-bold text-neutral-800">Spark Asistent</p>
-            <p className="text-xs text-stone-400">Pitaj me bilo što o aplikaciji</p>
+            <p className="text-xs text-stone-400">Personalizirani savjetnik za tvoj profil</p>
           </div>
         </div>
       </div>
