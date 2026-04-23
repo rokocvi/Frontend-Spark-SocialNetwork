@@ -6,7 +6,10 @@ import useAuthStore from '../store/authStore'
 function SparkAssistant() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
-  const [messages, setMessages] = useState([])
+  const [messages, setMessages] = useState(() => {
+    const saved = localStorage.getItem('assistant-messages')
+    return saved ? JSON.parse(saved) : []
+  })
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [loadingProfile, setLoadingProfile] = useState(true)
@@ -15,6 +18,12 @@ function SparkAssistant() {
   useEffect(() => {
     fetchUserContext()
   }, [])
+
+  useEffect(() => {
+    if (messages.length > 0) {
+      localStorage.setItem('assistant-messages', JSON.stringify(messages))
+    }
+  }, [messages])
 
   const fetchUserContext = async () => {
     try {
@@ -83,18 +92,22 @@ function SparkAssistant() {
 
       setUserContext(context)
 
-      // Postavi početnu poruku s personaliziranim pozdravom
-      setMessages([{
-        role: 'assistant',
-        content: `Bok ${profile.displayName || user?.username}! Ja sam tvoj Spark asistent. Vidim da imaš ${sparkHistory.length} Sparkova i ${totalMatches} matcheva do sad${streak > 0 ? `, a streak ti je ${streak} dana 🔥` : ''}. Kako ti mogu pomoći? ⚡`
-      }])
+      // Postavi početnu poruku samo ako nema već poruka iz localStorage
+      if (messages.length === 0) {
+        setMessages([{
+          role: 'assistant',
+          content: `Bok ${profile.displayName || user?.username}! Ja sam tvoj Spark asistent. Vidim da imaš ${sparkHistory.length} Sparkova i ${totalMatches} matcheva do sad${streak > 0 ? `, a streak ti je ${streak} dana 🔥` : ''}. Kako ti mogu pomoći? ⚡`
+        }])
+      }
 
     } catch (err) {
       console.error(err)
-      setMessages([{
-        role: 'assistant',
-        content: 'Bok! Ja sam Spark asistent. Možeš me pitati bilo što o aplikaciji. ⚡'
-      }])
+      if (messages.length === 0) {
+        setMessages([{
+          role: 'assistant',
+          content: 'Bok! Ja sam Spark asistent. Možeš me pitati bilo što o aplikaciji. ⚡'
+        }])
+      }
     } finally {
       setLoadingProfile(false)
     }
@@ -214,12 +227,24 @@ Koristi ove podatke za personalizirane savjete. Na primjer, ako korisnik ima mal
           <span className="text-lg font-bold text-orange-500 tracking-tight">Spark</span>
           <span className="text-[10px] font-semibold text-stone-400 uppercase tracking-widest">beta</span>
         </div>
-        <button
-          onClick={() => navigate('/home')}
-          className="px-3 py-1.5 rounded-lg text-xs font-semibold text-neutral-500 border border-stone-200 hover:bg-stone-100 transition-colors"
-        >
-          ← Nazad
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              localStorage.removeItem('assistant-messages')
+              setMessages([])
+              fetchUserContext()
+            }}
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold text-stone-400 border border-stone-200 hover:bg-stone-100 transition-colors"
+          >
+            Očisti chat
+          </button>
+          <button
+            onClick={() => navigate('/home')}
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold text-neutral-500 border border-stone-200 hover:bg-stone-100 transition-colors"
+          >
+            ← Nazad
+          </button>
+        </div>
       </nav>
 
       {/* Header */}
@@ -254,7 +279,6 @@ Koristi ove podatke za personalizirane savjete. Na primjer, ako korisnik ima mal
               </div>
             </div>
 
-            {/* Prijedlozi pitanja ispod prvog AI odgovora */}
             {i === 0 && (
               <div className="flex flex-wrap gap-2 mt-3 ml-9">
                 {suggestedQuestions.map(q => (
