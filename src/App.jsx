@@ -9,6 +9,7 @@ import Messages from './pages/Messages'
 import Profile from './pages/Profile'
 import UserProfile from './pages/UserProfile'
 import Feed from './pages/Feed'
+import SparkAssistant from './pages/SparkAssistant'
 
 function App() {
   return (
@@ -38,6 +39,10 @@ function App() {
 
          <Route path="/feed" element={
           <ProtectedRoute><Feed /></ProtectedRoute>
+        } />
+
+        <Route path="/assistant" element={
+        <ProtectedRoute><SparkAssistant /></ProtectedRoute>
         } />
     </Routes>
     </BrowserRouter>
