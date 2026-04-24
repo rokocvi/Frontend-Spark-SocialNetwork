@@ -11,16 +11,17 @@ function Chat() {
   const [messages, setMessages] = useState([])
   const [content, setContent] = useState('')
   const [connected, setConnected] = useState(false)
-  const [isTyping, setIsTyping] = useState(false) // drugi korisnik tipka
+  const [isTyping, setIsTyping] = useState(false)
+  const [isBlocked, setIsBlocked] = useState(false)
   const bottomRef = useRef(null)
   const connectionRef = useRef(null)
   const isConnectingRef = useRef(false)
-  const typingTimeoutRef = useRef(null) // timeout za stop typing
+  const typingTimeoutRef = useRef(null)
 
   useEffect(() => {
     fetchMessages()
-    //markAsRead()
     setupSignalR()
+    fetchBlockStatus()
 
     return () => {
       if (connectionRef.current) {
@@ -48,11 +49,14 @@ function Chat() {
     }
   }
 
-  const markAsRead = async () => {
+  const fetchBlockStatus = async () => {
     try {
-      await api.put(`/message/${matchId}/read`)
-    } catch (err) {
-      console.error(err)
+      const matchRes = await api.get(`/match/${matchId}`)
+      const matchedUsername = matchRes.data.matchedUsername
+      const blockRes = await api.get('/block')
+      setIsBlocked(blockRes.data.some(b => b.blockedUsername === matchedUsername))
+    } catch {
+      setIsBlocked(false)
     }
   }
 
@@ -67,28 +71,23 @@ function Chat() {
       .withAutomaticReconnect()
       .build()
 
-    // Nova poruka
     connection.on('ReceiveMessage', (message) => {
       setMessages(prev => {
         if (prev.some(m => m.id === message.id)) return prev
         return [...prev, message]
       })
       setIsTyping(false)
-      // Označi kao pročitano kroz hub
       connection.invoke('MarkRead', matchId).catch(() => {})
     })
 
-    // Drugi korisnik tipka
     connection.on('UserTyping', () => {
       setIsTyping(true)
     })
 
-    // Drugi korisnik prestao tipkati
     connection.on('UserStoppedTyping', () => {
       setIsTyping(false)
     })
 
-    // Drugi korisnik pročitao poruke — ažuriraj isRead na svim porukama
     connection.on('MessagesRead', () => {
       setMessages(prev =>
         prev.map(m =>
@@ -118,25 +117,24 @@ function Chat() {
   }
 
   const handleTyping = (e) => {
-  setContent(e.target.value)
+    setContent(e.target.value)
 
-  if (!connectionRef.current || !connected) return
+    if (!connectionRef.current || !connected) return
 
-  connectionRef.current.invoke('Typing', matchId, user?.username).catch(() => {})
+    connectionRef.current.invoke('Typing', matchId, user?.username).catch(() => {})
 
-  // Poništi prethodni timeout i postavi novi
-  if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
-  
-  typingTimeoutRef.current = setTimeout(() => {
-    connectionRef.current?.invoke('StopTyping', matchId).catch(() => {})
-    setIsTyping(false) // ← dodaj ovo
-  }, 2000)
-}
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
+
+    typingTimeoutRef.current = setTimeout(() => {
+      connectionRef.current?.invoke('StopTyping', matchId).catch(() => {})
+      setIsTyping(false)
+    }, 2000)
+  }
+
   const handleSend = async (e) => {
     e.preventDefault()
     if (!content.trim()) return
 
-    // Poništi typing timeout pri slanju
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
     connectionRef.current?.invoke('StopTyping', matchId).catch(() => {})
 
@@ -153,7 +151,7 @@ function Chat() {
     }
   }
 
- return (
+  return (
     <div className="min-h-screen bg-stone-50 text-neutral-900 flex flex-col">
 
       {/* Navbar */}
@@ -251,24 +249,30 @@ function Chat() {
 
       {/* Input */}
       <div className="bg-white border-t border-stone-200 px-4 py-3 flex-shrink-0">
-        <form onSubmit={handleSend} className="max-w-xl mx-auto flex gap-2 items-center">
-          <input
-            type="text"
-            value={content}
-            onChange={handleTyping}
-            className="flex-1 bg-stone-50 text-neutral-800 placeholder-stone-400 border border-stone-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 focus:bg-white transition"
-            placeholder="Napiši poruku..."
-          />
-          <button
-            type="submit"
-            className="w-10 h-10 rounded-xl bg-orange-500 hover:bg-orange-600 active:scale-95 text-white flex items-center justify-center flex-shrink-0 transition-all"
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="22" y1="2" x2="11" y2="13" />
-              <polygon points="22 2 15 22 11 13 2 9 22 2" />
-            </svg>
-          </button>
-        </form>
+        {isBlocked ? (
+          <div className="max-w-xl mx-auto text-center py-2">
+            <p className="text-xs text-stone-400">Ne možeš slati poruke blokiranom korisniku.</p>
+          </div>
+        ) : (
+          <form onSubmit={handleSend} className="max-w-xl mx-auto flex gap-2 items-center">
+            <input
+              type="text"
+              value={content}
+              onChange={handleTyping}
+              className="flex-1 bg-stone-50 text-neutral-800 placeholder-stone-400 border border-stone-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 focus:bg-white transition"
+              placeholder="Napiši poruku..."
+            />
+            <button
+              type="submit"
+              className="w-10 h-10 rounded-xl bg-orange-500 hover:bg-orange-600 active:scale-95 text-white flex items-center justify-center flex-shrink-0 transition-all"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13" />
+                <polygon points="22 2 15 22 11 13 2 9 22 2" />
+              </svg>
+            </button>
+          </form>
+        )}
       </div>
     </div>
   )

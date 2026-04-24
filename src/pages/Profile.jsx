@@ -17,12 +17,14 @@ function Profile() {
   const [success, setSuccess] = useState('')
   const [stats, setStats] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [blockedUsers, setBlockedUsers] = useState([])
 
   const fileInputRef = useRef(null)
 
   useEffect(() => {
     fetchProfile()
     fetchStats()
+    fetchBlockedUsers()
   }, [])
 
   const fetchProfile = async () => {
@@ -51,21 +53,17 @@ function Profile() {
       const activeMatches = matchRes.data
       const matchHistory = matchHistoryRes.data
 
-      // Ukupno sparkova (history + današnji ako postoji)
       const totalSparks = sparkHistory.length
 
-      // Ukupno matcheva (aktivni + istekli iz historije)
       const allMatchIds = new Set([
         ...activeMatches.map(m => m.id),
         ...matchHistory.map(m => m.id)
       ])
       const totalMatches = allMatchIds.size
 
-      // Permanentni matchevi
       const permanentMatches = [...activeMatches, ...matchHistory]
         .filter(m => m.isPermanent).length
 
-      // Najčešći tagovi iz svih sparkova
       const tagCount = {}
       sparkHistory.forEach(s => {
         s.tags.forEach(tag => {
@@ -77,7 +75,6 @@ function Profile() {
         .slice(0, 5)
         .map(([tag]) => tag)
 
-      // Streak — koliko dana zaredom unatrag
       let streak = 0
       const today = new Date()
       today.setHours(0, 0, 0, 0)
@@ -103,6 +100,24 @@ function Profile() {
       setStats({ totalSparks, totalMatches, permanentMatches, topTags, streak })
     } catch {
       setStats(null)
+    }
+  }
+
+  const fetchBlockedUsers = async () => {
+    try {
+      const res = await api.get('/block')
+      setBlockedUsers(res.data)
+    } catch {
+      setBlockedUsers([])
+    }
+  }
+
+  const handleUnblock = async (username) => {
+    try {
+      await api.delete(`/block/${username}`)
+      setBlockedUsers(prev => prev.filter(b => b.blockedUsername !== username))
+    } catch (err) {
+      console.error(err)
     }
   }
 
@@ -156,6 +171,20 @@ function Profile() {
     }
   }
 
+  const handleDeleteAccount = async () => {
+    setSaving(true)
+    setError('')
+    try {
+      await api.delete('/profile')
+      logout()
+      navigate('/login')
+    } catch (err) {
+      setError(err.response?.data?.message || 'Greška pri brisanju računa.')
+      setSaving(false)
+      setConfirmDelete(false)
+    }
+  }
+
   const imageSource = preview
     ? preview
     : profileImage
@@ -170,23 +199,7 @@ function Profile() {
     )
   }
 
-  const handleDeleteAccount = async () => {
-
-    setSaving(true)
-    setError('')
-    try{
-      await api.delete('/profile')
-      logout()
-      navigate('/login')
-    } catch(err){
-      setError(err.response?.data?.message || 'Greška pri brisanju računa.')
-      setSaving(false)
-      setConfirmDelete(false)
-    }
-    
-  }
-
- return (
+  return (
     <div className="min-h-screen bg-stone-50 text-neutral-900">
 
       {/* Navbar */}
@@ -376,6 +389,48 @@ function Profile() {
             </button>
           </form>
         </div>
+
+        {/* Blokirani korisnici */}
+        {blockedUsers.length > 0 && (
+          <div className="bg-white rounded-2xl border border-stone-200 p-6">
+            <h2 className="text-sm font-semibold text-stone-400 uppercase tracking-widest mb-5">
+              Blokirani korisnici
+            </h2>
+            <div className="space-y-3">
+              {blockedUsers.map((b) => (
+                <div key={b.id} className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-orange-50 border border-orange-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+                      {b.blockedProfileImageBase64 ? (
+                        <img
+                          src={`data:image/jpeg;base64,${b.blockedProfileImageBase64}`}
+                          alt={b.blockedUsername}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-xs font-bold text-orange-500">
+                          {(b.blockedDisplayName || b.blockedUsername)[0].toUpperCase()}
+                        </span>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-neutral-800">
+                        {b.blockedDisplayName || b.blockedUsername}
+                      </p>
+                      <p className="text-xs text-stone-400">@{b.blockedUsername}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleUnblock(b.blockedUsername)}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold text-red-500 border border-red-200 hover:bg-red-50 transition-colors"
+                  >
+                    Odblokiraj
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Brisanje računa */}
         <div className="bg-white rounded-2xl border border-red-100 p-6">

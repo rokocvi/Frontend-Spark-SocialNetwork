@@ -8,19 +8,48 @@ function UserProfile() {
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [isBlocked, setIsBlocked] = useState(false)
+  const [blockLoading, setBlockLoading] = useState(false)
 
   useEffect(() => {
     fetchProfile()
+    fetchBlockStatus()
   }, [username])
 
   const fetchProfile = async () => {
+  try {
+    const res = await api.get(`/profile/${username}`)
+    setProfile(res.data)
+  } catch (err) {
+    setError(err.response?.data?.message || 'Korisnik nije pronađen.')
+  } finally {
+    setLoading(false)
+  }
+}
+
+  const fetchBlockStatus = async () => {
     try {
-      const res = await api.get(`/profile/${username}`)
-      setProfile(res.data)
+      const res = await api.get('/block')
+      setIsBlocked(res.data.some(b => b.blockedUsername === username))
     } catch {
-      setError('Korisnik nije pronađen.')
+      setIsBlocked(false)
+    }
+  }
+
+  const handleBlock = async () => {
+    setBlockLoading(true)
+    try {
+      if (isBlocked) {
+        await api.delete(`/block/${username}`)
+        setIsBlocked(false)
+      } else {
+        await api.post(`/block/${username}`)
+        setIsBlocked(true)
+      }
+    } catch (err) {
+      console.error(err)
     } finally {
-      setLoading(false)
+      setBlockLoading(false)
     }
   }
 
@@ -62,7 +91,6 @@ function UserProfile() {
             {/* Profil card */}
             <div className="bg-white rounded-2xl border border-stone-200 p-6">
               <div className="flex items-center gap-5">
-                {/* Avatar */}
                 <div className="w-20 h-20 rounded-full bg-orange-50 border-2 border-orange-200 flex items-center justify-center overflow-hidden flex-shrink-0">
                   {profile.profileImageBase64 ? (
                     <img
@@ -77,7 +105,6 @@ function UserProfile() {
                   )}
                 </div>
 
-                {/* Info */}
                 <div>
                   <h2 className="text-lg font-bold text-neutral-800">
                     {profile.displayName || profile.username}
@@ -93,6 +120,21 @@ function UserProfile() {
                   <p className="text-sm text-neutral-700 leading-relaxed">{profile.bio}</p>
                 </div>
               )}
+
+              {/* Blokiranje */}
+              <div className="mt-5 pt-5 border-t border-stone-100">
+                <button
+                  onClick={handleBlock}
+                  disabled={blockLoading}
+                  className={`px-4 py-2 rounded-xl text-xs font-semibold border transition-colors disabled:opacity-50 ${
+                    isBlocked
+                      ? 'bg-stone-100 text-stone-500 border-stone-200 hover:bg-red-50 hover:text-red-500 hover:border-red-200'
+                      : 'text-red-500 border-red-200 hover:bg-red-50'
+                  }`}
+                >
+                  {blockLoading ? 'Učitavam...' : isBlocked ? '✓ Blokirano — klikni za odblokiranje' : 'Blokiraj korisnika'}
+                </button>
+              </div>
             </div>
           </>
         )}
