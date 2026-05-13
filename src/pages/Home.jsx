@@ -334,6 +334,13 @@ function Home() {
                 rows={3}
                 maxLength={280}
               />
+              <p className={`mt-1 text-xs text-right ${
+                280 - content.length < 20
+                  ? 'text-red-400'
+                  : 'text-stone-400'
+              }`}>
+                {280 - content.length} znakova preostalo
+              </p>
 
               <div>
                 <input

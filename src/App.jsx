@@ -10,6 +10,7 @@ import Profile from './pages/Profile'
 import UserProfile from './pages/UserProfile'
 import Feed from './pages/Feed'
 import SparkAssistant from './pages/SparkAssistant'
+import Literature from './pages/Literature'
 
 function App() {
   return (
@@ -17,34 +18,17 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/home" element={
-          <ProtectedRoute><Home /></ProtectedRoute>
-        } />
-        <Route path = "/profile" element={
-          <ProtectedRoute><Profile /></ProtectedRoute>
-        } />
-        <Route path="/match" element={
-          <ProtectedRoute><Match /></ProtectedRoute>
-        } />
-        <Route path="/chat/:matchId" element={
-          <ProtectedRoute><Chat /></ProtectedRoute>
-        } />
-        <Route path="/messages" element={
-          <ProtectedRoute><Messages /></ProtectedRoute>
-        } />
+        <Route path="/literature" element={<Literature />} />
+        <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path="/match" element={<ProtectedRoute><Match /></ProtectedRoute>} />
+        <Route path="/chat/:matchId" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+        <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
+        <Route path="/user/:username" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
+        <Route path="/feed" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
+        <Route path="/assistant" element={<ProtectedRoute><SparkAssistant /></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/login" />} />
-        <Route path="/user/:username" element={
-        <ProtectedRoute><UserProfile /></ProtectedRoute>
-         } />
-
-         <Route path="/feed" element={
-          <ProtectedRoute><Feed /></ProtectedRoute>
-        } />
-
-        <Route path="/assistant" element={
-        <ProtectedRoute><SparkAssistant /></ProtectedRoute>
-        } />
-    </Routes>
+      </Routes>
     </BrowserRouter>
   )
 }
